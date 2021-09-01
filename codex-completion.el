@@ -41,58 +41,22 @@
 
 (defvar url-http-end-of-headers)
 
-(defcustom codex-completion--openai-api-token nil
+(defcustom codex-completion-openai-api-token nil
   "Token to access the OpenAI API."
   :group 'codex-completion
   :type 'string)
 
-(defcustom codex-completion--openai-api-url "https://api.openai.com/v1/engines/davinci-codex/completions"
+(defcustom codex-completion-openai-api-url "https://api.openai.com/v1/engines/davinci-codex/completions"
   "URL to access the specific OpenAI Model."
   :group 'codex-completion
   :type 'string)
 
-(defun codex-query-region (beginning end)
-  "Query OpenAI Codex to generate, complete code based on current region as context"
-  (interactive "r")
-  (let* ((query (buffer-substring-no-properties beginning end))
-         (bearer-token (format "Bearer %s" codex-completion--openai-api-token))
-         (url-request-method "POST")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("Authorization" . ,bearer-token)))
-         (url-request-data
-          (json-encode `(("prompt" . ,query)
-                         ("max_tokens" . 64)
-                         ("temperature" . 0)
-                         ("top_p" . 1)
-                         ("frequency_penalty" . 0)
-                         ("presence_penalty" . 0)))))
-    (insert
-     (codex-completion--get-completion-from-api))))
-
-(defun codex-query-argument (query)
-  "Query OpenAI Codex to generate code based on `query` passed by user"
-  (interactive "sQuery: ")
-  (let* ((bearer-token (format "Bearer %s" codex-completion--openai-api-token))
-         (url-request-method "POST")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("Authorization" . ,bearer-token)))
-         (url-request-data
-          (json-encode `(("prompt" . ,query)
-                         ("max_tokens" . 64)
-                         ("temperature" . 0)
-                         ("top_p" . 1)
-                         ("frequency_penalty" . 0)
-                         ("presence_penalty" . 0)))))
-    (insert
-     (codex-completion--get-completion-from-api))))
-
 (defun codex-completion--get-completion-from-api ()
+  "Call OpenAI API and return suggested completion from response"
   (car
    (with-current-buffer
        (url-retrieve-synchronously
-        codex-completion--openai-api-url)
+        codex-completion-openai-api-url)
      (goto-char url-http-end-of-headers)
      ;; extract completion from response
      (codex-completion--get-completions-from-response (json-read)))))
@@ -103,6 +67,43 @@
     (mapcar (lambda (completion)
               (cdr (assoc 'text completion)))
             completions)))
+
+(defun codex-query-region (beginning end)
+  "Query OpenAI Codex to generate code taking current region as context"
+  (interactive "r")
+  (let* ((query (buffer-substring-no-properties beginning end))
+         (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
+         (url-request-method "POST")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,bearer-token)))
+         (url-request-data
+          (json-encode `(("prompt" . ,query)
+                         ("max_tokens" . 64)
+                         ("temperature" . 0)
+                         ("top_p" . 1)
+                         ("frequency_penalty" . 0)
+                         ("presence_penalty" . 0)))))
+    (insert
+     (codex-completion--get-completion-from-api))))
+
+(defun codex-query (query)
+  "Query OpenAI Codex to generate code taking `query` passed by user as context"
+  (interactive "sQuery: ")
+  (let* ((bearer-token (format "Bearer %s" codex-completion-openai-api-token))
+         (url-request-method "POST")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,bearer-token)))
+         (url-request-data
+          (json-encode `(("prompt" . ,query)
+                         ("max_tokens" . 64)
+                         ("temperature" . 0)
+                         ("top_p" . 1)
+                         ("frequency_penalty" . 0)
+                         ("presence_penalty" . 0)))))
+    (insert
+     (codex-completion--get-completion-from-api))))
 
 (provide 'codex-completion)
 
