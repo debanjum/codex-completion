@@ -14,7 +14,8 @@
          ;; Codex Completion Package
          (use-package codex-completion
            :load-path "~/.emacs.d/lisp/codex-completion.el"
-           :bind ("C-." . 'codex-query-region))
+           :bind ("C-c ." . 'codex-query-region)
+           :config (setq codex-completion-openai-api-token <YOUR_OPENAI_API_TOKEN>))
        #+end_src
 
    - Using [[https://github.com/raxod502/straight.el][straight.el]]
@@ -24,6 +25,7 @@
          ;; Codex-Completion Package
          (use-package codex-completion
            :straight (codex-completion :type git :host github :repo "debanjum/codex-completion")
+           :bind ("C-c ." . 'codex-query-region)
            :config (setq codex-completion-openai-api-token <YOUR_OPENAI_API_TOKEN>))
        #+end_src
 
