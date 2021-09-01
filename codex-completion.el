@@ -51,9 +51,27 @@
   :group 'codex-completion
   :type 'string)
 
-;; define a elisp function to query OpenAI davinci codex for completion suggestions
-(defun codex-query (query)
-  "Query OpenAI davinci codex for completing suggestions"
+(defun codex-query-region (beginning end)
+  "Query OpenAI Codex to generate, complete code based on current region as context"
+  (interactive "r")
+  (let* ((query (buffer-substring-no-properties beginning end))
+         (bearer-token (format "Bearer %s" codex-completion--openai-api-token))
+         (url-request-method "POST")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,bearer-token)))
+         (url-request-data
+          (json-encode `(("prompt" . ,query)
+                         ("max_tokens" . 64)
+                         ("temperature" . 0)
+                         ("top_p" . 1)
+                         ("frequency_penalty" . 0)
+                         ("presence_penalty" . 0)))))
+    (insert
+     (codex-completion--get-completion-from-api))))
+
+(defun codex-query-argument (query)
+  "Query OpenAI Codex to generate code based on `query` passed by user"
   (interactive "sQuery: ")
   (let* ((bearer-token (format "Bearer %s" codex-completion--openai-api-token))
          (url-request-method "POST")
@@ -79,7 +97,6 @@
      ;; extract completion from response
      (codex-completion--get-completions-from-response (json-read)))))
 
-;; define a elisp function to get the completion suggestions from the json response
 (defun codex-completion--get-completions-from-response (json)
   "Get the completion suggestions from the json response"
   (let ((completions (cdr (assoc 'choices json))))
