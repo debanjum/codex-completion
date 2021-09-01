@@ -1,0 +1,77 @@
+* Codex Completion
+  /Generate, Complete Code in Emacs using [[https://openai.com/blog/openai-codex/][OpenAI Codex]]/
+
+** Requirements
+   - API Key with access to [[https://openai.com/blog/openai-codex/][OpenAI's Codex]]
+     /You can get on the Codex beta waitlist by enrolling [[https://beta.openai.com/codex-waitlist][here]]/
+
+** Installation
+   - Direct Install
+     - Put ~codex-completion.el~ in your Emacs load path. For e.g =~/.emacs.d/lisp=
+
+     - Load via [[https://github.com/jwiegley/use-package][use-package]] in your =~/.emacs.d/init.el= or =.emacs= file by adding below snippet
+       #+begin_src elisp
+         ;; Codex Completion Package
+         (use-package codex-completion
+           :load-path "~/.emacs.d/lisp/codex-completion.el"
+           :bind ("C-." . 'codex-query-region))
+       #+end_src
+
+   - Using [[https://github.com/raxod502/straight.el][straight.el]]
+     - Ensure [[https://github.com/raxod502/straight.el#getting-started][straight.el]], [[https://github.com/raxod502/straight.el#integration-with-use-package][straight-use-package]] are setup
+     - Add below snippet to your emacs config, e.g =~/.emacs.d/init.el= and evaluate it
+       #+begin_src elisp
+         ;; Codex-Completion Package
+         (use-package codex-completion
+           :straight (codex-completion :type git :host github :repo "debanjum/codex-completion")
+           :config (setq codex-completion-openai-api-token <YOUR_OPENAI_API_TOKEN>))
+       #+end_src
+
+     - /Note: Procedure using Quelpa etc would be similar to straight.el/
+
+** Usage
+   - Call ~M-x codex-query-region~ after marking text to use as context/instruction for the model /OR/
+   - Call ~M-x codex-query~, then enter your instructions/query/context as argument
+
+/Note: The code completion from the model will be inserted into the current buffer at ~point~/
+
+** Miscellaneous
+*** Contributions by Codex
+    Codex was instrumental in writing this tool.
+
+    Codex seems to understand the OpenAI API response schema.
+    Notice the ~choices~, ~text~ keys used in the ~codex-get-completions~ function below
+
+    - Prompt to Codex
+      #+begin_src elisp
+      ;; define a elisp function to query OpenAI davinci codex at https://api.openai.com/v1/engines/davinci/completions for completion suggestions
+      #+end_src
+
+    - Response from Codex
+      #+begin_src elisp
+  ;; define a elisp function to query OpenAI davinci codex at https://api.openai.com/v1/engines/davinci/completions for completion suggestions
+  (defun codex-query (query)
+    "Query OpenAI davinci codex at https://api.openai.com/v1/engines/davinci/completions for completion suggestions"
+    (let ((url-request-method "POST")
+          (url-request-extra-headers
+           '(("Content-Type" . "application/json")
+             ("Authorization" . "Bearer ")
+             ("User-Agent" . "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36")
+             ("Accept" . "application/json")
+             ("Accept-Language" . "en-US,en;q=0.8")))
+          (url-request-data
+           (json-encode `(("text" . ,query))))
+          (url-show-status nil))
+      (with-current-buffer (url-retrieve-synchronously "https://api.openai.com/v1/engines/davinci/completions")
+        (goto-char (point-min))
+        (re-search-forward "^$")
+        (json-read))))
+
+  ;; define a elisp function to get the completion suggestions from the json response
+  (defun codex-get-completions (json)
+    "Get the completion suggestions from the json response"
+    (let ((completions (cdr (assoc 'choices json))))
+      (mapcar (lambda (completion)
+                (cdr (assoc 'text completion)))
+              completions)))
+      #+end_src
