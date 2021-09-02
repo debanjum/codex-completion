@@ -78,17 +78,17 @@
               (cdr (assoc 'text completion)))
             completions)))
 
-(defun codex-query-region (beginning end)
+(defun codex-complete-region (beginning end)
   "Query OpenAI Codex to generate code taking current region as context"
   (interactive "r")
-  (let* ((query (buffer-substring-no-properties beginning end))
+  (let* ((region (buffer-substring-no-properties beginning end))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,bearer-token)))
          (url-request-data
-          (json-encode `(("prompt" . ,query)
+          (json-encode `(("prompt" . ,region)
                          ("max_tokens" . 64)
                          ("temperature" . 0)
                          ("top_p" . 1)
@@ -97,7 +97,7 @@
     (insert
      (codex-completion--get-completion-from-api))))
 
-(defun codex-query-search (query)
+(defun codex-complete-query (query)
   "Query OpenAI Codex to generate code taking `query` passed by user as context"
   (interactive "sQuery: ")
   (let* ((query (text-before-previous-empty-line))
@@ -116,17 +116,17 @@
     (insert
      (codex-completion--get-completion-from-api))))
 
-(defun codex-query ()
+(defun codex-complete ()
   "Query OpenAI Codex to generate code. Provide current paragraph till point as context"
   (interactive)
-  (let* ((query (codex-completion--get-current-paragraph-until-point))
+  (let* ((paragraph (codex-completion--get-current-paragraph-until-point))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,bearer-token)))
          (url-request-data
-          (json-encode `(("prompt" . ,query)
+          (json-encode `(("prompt" . ,paragraph)
                          ("max_tokens" . 64)
                          ("temperature" . 0)
                          ("top_p" . 1)
