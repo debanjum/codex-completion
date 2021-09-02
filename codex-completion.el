@@ -54,12 +54,13 @@
 (defun codex-completion--get-current-paragraph-until-point ()
   "Return text from point to previous empty line."
   (interactive)
-  (buffer-substring-no-properties
-   (point)
-   (save-excursion
-     (search-backward-regexp "^[ \t]*$" nil t)
-     (forward-line)
-     (point))))
+  (replace-regexp-in-string
+   "^[ \t]*\n" ""
+   (buffer-substring-no-properties
+    (point)
+    (save-excursion
+      (backward-paragraph)
+      (point)))))
 
 (defun codex-completion--get-completion-from-api ()
   "Call OpenAI API and return suggested completion from response"
