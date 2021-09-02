@@ -51,6 +51,16 @@
   :group 'codex-completion
   :type 'string)
 
+(defun codex-completion--get-current-paragraph-until-point ()
+  "Return text from point to previous empty line."
+  (interactive)
+  (buffer-substring-no-properties
+   (point)
+   (save-excursion
+     (search-backward-regexp "^[ \t]*$" nil t)
+     (forward-line)
+     (point))))
+
 (defun codex-completion--get-completion-from-api ()
   "Call OpenAI API and return suggested completion from response"
   (car
@@ -87,10 +97,30 @@
     (insert
      (codex-completion--get-completion-from-api))))
 
-(defun codex-query (query)
+(defun codex-query-search (query)
   "Query OpenAI Codex to generate code taking `query` passed by user as context"
   (interactive "sQuery: ")
-  (let* ((bearer-token (format "Bearer %s" codex-completion-openai-api-token))
+  (let* ((query (text-before-previous-empty-line))
+         (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
+         (url-request-method "POST")
+         (url-request-extra-headers
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,bearer-token)))
+         (url-request-data
+          (json-encode `(("prompt" . ,query)
+                         ("max_tokens" . 64)
+                         ("temperature" . 0)
+                         ("top_p" . 1)
+                         ("frequency_penalty" . 0)
+                         ("presence_penalty" . 0)))))
+    (insert
+     (codex-completion--get-completion-from-api))))
+
+(defun codex-query ()
+  "Query OpenAI Codex to generate code. Provide current paragraph till point as context"
+  (interactive)
+  (let* ((query (codex-completion--get-current-paragraph-until-point))
+         (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
