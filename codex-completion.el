@@ -79,6 +79,7 @@
               (cdr (assoc 'text completion)))
             completions)))
 
+;;;###autoload
 (defun codex-complete-region (beginning end)
   "Query OpenAI Codex to generate code taking current region as context"
   (interactive "r")
@@ -98,6 +99,7 @@
     (insert
      (codex-completion--get-completion-from-api))))
 
+;;;###autoload
 (defun codex-complete-query (query)
   "Query OpenAI Codex to generate code taking `query` passed by user as context"
   (interactive "sQuery: ")
@@ -117,6 +119,7 @@
     (insert
      (codex-completion--get-completion-from-api))))
 
+;;;###autoload
 (defun codex-complete ()
   "Query OpenAI Codex to generate code. Provide current paragraph till point as context"
   (interactive)
