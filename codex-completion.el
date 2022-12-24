@@ -103,8 +103,7 @@
 (defun codex-complete-query (query)
   "Query OpenAI Codex to generate code taking `query` passed by user as context"
   (interactive "sQuery: ")
-  (let* ((query (text-before-previous-empty-line))
-         (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
+  (let* ((bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
