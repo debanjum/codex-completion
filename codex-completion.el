@@ -42,12 +42,17 @@
 (defvar url-http-end-of-headers)
 
 (defcustom codex-completion-openai-api-token nil
-  "Token to access the OpenAI API."
+  "The Token to access the OpenAI API."
   :group 'codex-completion
   :type 'string)
 
-(defcustom codex-completion-openai-api-url "https://api.openai.com/v1/engines/davinci-codex/completions"
-  "URL to access the specific OpenAI Model."
+(defcustom codex-completion-openai-api-url "https://api.openai.com/v1/completions"
+  "The URL to access the OpenAI API completion endpoint."
+  :group 'codex-completion
+  :type 'string)
+
+(defcustom codex-completion-openai-model "code-davinci-002"
+  "The OpenAI completion model."
   :group 'codex-completion
   :type 'string)
 
@@ -91,11 +96,9 @@
             ("Authorization" . ,bearer-token)))
          (url-request-data
           (json-encode `(("prompt" . ,region)
+                         ("model" . ,codex-completion-openai-model)
                          ("max_tokens" . 64)
-                         ("temperature" . 0)
-                         ("top_p" . 1)
-                         ("frequency_penalty" . 0)
-                         ("presence_penalty" . 0)))))
+                         ("temperature" . 0)))))
     (insert
      (codex-completion--get-completion-from-api))))
 
@@ -110,11 +113,9 @@
             ("Authorization" . ,bearer-token)))
          (url-request-data
           (json-encode `(("prompt" . ,query)
+                         ("model" . ,codex-completion-openai-model)
                          ("max_tokens" . 64)
-                         ("temperature" . 0)
-                         ("top_p" . 1)
-                         ("frequency_penalty" . 0)
-                         ("presence_penalty" . 0)))))
+                         ("temperature" . 0)))))
     (insert
      (codex-completion--get-completion-from-api))))
 
@@ -122,19 +123,17 @@
 (defun codex-complete ()
   "Query OpenAI Codex to generate code. Provide current paragraph till point as context"
   (interactive)
-  (let* ((paragraph (codex-completion--get-current-paragraph-until-point))
+  (let* ((prefix (codex-completion--get-current-paragraph-until-point))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,bearer-token)))
          (url-request-data
-          (json-encode `(("prompt" . ,paragraph)
+          (json-encode `(("prompt" . ,prefix)
+                         ("model" . ,codex-completion-openai-model)
                          ("max_tokens" . 64)
-                         ("temperature" . 0)
-                         ("top_p" . 1)
-                         ("frequency_penalty" . 0)
-                         ("presence_penalty" . 0)))))
+                         ("temperature" . 0)))))
     (insert
      (codex-completion--get-completion-from-api))))
 
