@@ -67,6 +67,17 @@
       (backward-paragraph)
       (point)))))
 
+(defun codex-completion--get-current-paragraph-after-point ()
+  "Return text from point to next empty line."
+  (interactive)
+  (replace-regexp-in-string
+   "^[ \t]*\n" ""
+   (buffer-substring-no-properties
+    (point)
+    (save-excursion
+      (forward-paragraph)
+      (point)))))
+
 (defun codex-completion--get-completion-from-api ()
   "Call OpenAI API and return suggested completion from response."
   (car
@@ -124,9 +135,10 @@ Take QUERY passed by user as context."
 ;;;###autoload
 (defun codex-completion ()
   "Query OpenAI Codex to generate code.
-Provide current paragraph till point as context."
+Provide current paragraph split by point as context."
   (interactive)
   (let* ((prefix (codex-completion--get-current-paragraph-until-point))
+         (suffix (codex-completion--get-current-paragraph-after-point))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
@@ -134,8 +146,9 @@ Provide current paragraph till point as context."
             ("Authorization" . ,bearer-token)))
          (url-request-data
           (json-encode `(("prompt" . ,prefix)
+                         ("suffix" . ,suffix)
                          ("model" . ,codex-completion-openai-model)
-                         ("max_tokens" . 64)
+                         ("max_tokens" . 256)
                          ("temperature" . 0)))))
     (insert
      (codex-completion--get-completion-from-api))))
