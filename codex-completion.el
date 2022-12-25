@@ -174,6 +174,22 @@ Take INSTRUCTION passed by user and current active region (if any) as context."
           (insert (codex-completion--get-edit-from-api)))
       (codex-completion--complete instruction))))
 
+;;;###autoload
+(defun codex-completion (&optional instruct)
+  "Make OpenAI Codex generate code completion or edit highlighted code.
+If INSTRUCT prefix set, ask user for instruction as context.
+Else if region active, use current region as context.
+Else use current paragraph as context."
+  (interactive "P")
+  (let ((instruction (if instruct (read-string "Instruction: ") "")))
+    (cond
+     (instruct
+      (codex-completion-instruct instruction))
+     ((region-active-p)
+      (codex-completion-complete-region (region-beginning) (region-end)))
+     (t
+      (codex-completion-complete)))))
+
 (provide 'codex-completion)
 
 ;;; codex-completion.el ends here
