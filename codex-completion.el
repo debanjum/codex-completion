@@ -46,13 +46,13 @@
   :group 'codex-completion
   :type 'string)
 
-(defcustom codex-completion-openai-api-url "https://api.openai.com/v1/completions"
+(defcustom codex-completion-openai-completion-url "https://api.openai.com/v1/completions"
   "The URL to access the OpenAI API completion endpoint."
   :group 'codex-completion
   :type 'string)
 
 (defcustom codex-completion-openai-model "code-davinci-002"
-  "The OpenAI completion model."
+  "The OpenAI code completion model."
   :group 'codex-completion
   :type 'string)
 
@@ -83,7 +83,7 @@
   (car
    (with-current-buffer
        (url-retrieve-synchronously
-        codex-completion-openai-api-url)
+        codex-completion-openai-completion-url)
      (goto-char url-http-end-of-headers)
      ;; extract completion from response
      (codex-completion--get-completions-from-response (json-read)))))
@@ -96,9 +96,9 @@
             completions)))
 
 ;;;###autoload
-(defun codex-completion-region (beginning end)
-  "Query OpenAI Codex to generate code.
-Take current region from BEGINNING to END as context."
+(defun codex-completion-complete-region (beginning end)
+  "Make OpenAI Codex generate code completion.
+Take current active region from BEGINNING to END as context."
   (interactive "r")
   (let* ((region (buffer-substring-no-properties beginning end))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
@@ -133,8 +133,8 @@ Take QUERY passed by user as context."
      (codex-completion--get-completion-from-api))))
 
 ;;;###autoload
-(defun codex-completion ()
-  "Query OpenAI Codex to generate code.
+(defun codex-completion-complete ()
+  "Make OpenAI Codex generate code completion.
 Provide current paragraph split by point as context."
   (interactive)
   (let* ((prefix (codex-completion--get-current-paragraph-until-point))
