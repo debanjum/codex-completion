@@ -56,6 +56,16 @@
   :group 'codex-completion
   :type 'string)
 
+(defcustom codex-completion-openai-edit-url "https://api.openai.com/v1/edits"
+  "The URL to access the OpenAI API edit endpoint."
+  :group 'codex-completion
+  :type 'string)
+
+(defcustom codex-completion-openai-edit-model "code-davinci-edit-001"
+  "The OpenAI code edit model."
+  :group 'codex-completion
+  :type 'string)
+
 (defun codex-completion--get-current-paragraph-until-point ()
   "Return text from point to previous empty line."
   (interactive)
@@ -95,6 +105,16 @@
               (cdr (assoc 'text completion)))
             completions)))
 
+(defun codex-completion--get-edit-from-api ()
+  "Call OpenAI API and return suggested edit from response."
+  (car
+   (with-current-buffer
+       (url-retrieve-synchronously
+        codex-completion-openai-edit-url)
+     (goto-char url-http-end-of-headers)
+     ;; extract edit from response
+     (codex-completion--get-completions-from-response (json-read)))))
+
 ;;;###autoload
 (defun codex-completion-complete-region (beginning end)
   "Make OpenAI Codex generate code completion.
@@ -115,22 +135,26 @@ Take current active region from BEGINNING to END as context."
      (codex-completion--get-completion-from-api))))
 
 ;;;###autoload
-(defun codex-completion-query (query)
-  "Query OpenAI Codex to generate code.
-Take QUERY passed by user as context."
-  (interactive "sQuery: ")
-  (let* ((bearer-token (format "Bearer %s" codex-completion-openai-api-token))
+(defun codex-completion-instruct (instruction)
+  "Instruct OpenAI Codex to generate code completion or edit highlighted code.
+Take INSTRUCTION passed by user and current active region (if any) as context."
+  (interactive "sInstruction: ")
+  (let* ((region (if (region-active-p) (buffer-substring-no-properties (region-beginning) (region-end)) ""))
+         (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,bearer-token)))
          (url-request-data
-          (json-encode `(("prompt" . ,query)
-                         ("model" . ,codex-completion-openai-model)
-                         ("max_tokens" . 64)
+          (json-encode `(("instruction" . ,instruction)
+                         ("input" . ,region)
+                         ("model" . ,codex-completion-openai-edit-model)
                          ("temperature" . 0)))))
-    (insert
-     (codex-completion--get-completion-from-api))))
+    (if (region-active-p)
+        (save-excursion
+          (delete-region (region-beginning) (region-end))
+          (insert (codex-completion--get-edit-from-api)))
+      (insert (codex-completion--get-edit-from-api)))))
 
 ;;;###autoload
 (defun codex-completion-complete ()
