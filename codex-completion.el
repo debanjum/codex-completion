@@ -3,9 +3,9 @@
 ;; Copyright (C) 2021-2022 Debanjum Singh Solanky
 
 ;; Author: Debanjum Singh Solanky <debanjum AT gmail DOT com>
-;; Description: Generate code from program description and code
+;; Description: Complete and edit code with Codex as your AI assistant
 ;; Keywords: abbrev, matching, auto-complete, programming
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/debanjum/codex-completion
 
@@ -28,10 +28,10 @@
 
 ;;; Commentary:
 
-;; This package enables code generation, completion using Codex by OpenAI
-;; The models code generation capabilities are exposed via an HTTP API
-;; Pass instructions as code, code comments, code skeleton or a combination
-;; The model will generate code based on your instructions
+;; This package enables code completion and editing using Codex by OpenAI
+;; The models code generation capabilities are utilized via an HTTP API
+;; The model will generate code based on your instructions and provided context
+;; Code around point, active region or direct instructions are passed as context
 
 ;;; Code:
 
