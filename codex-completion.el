@@ -68,7 +68,7 @@
       (point)))))
 
 (defun codex-completion--get-completion-from-api ()
-  "Call OpenAI API and return suggested completion from response"
+  "Call OpenAI API and return suggested completion from response."
   (car
    (with-current-buffer
        (url-retrieve-synchronously
@@ -78,15 +78,16 @@
      (codex-completion--get-completions-from-response (json-read)))))
 
 (defun codex-completion--get-completions-from-response (json)
-  "Get the completion suggestions from the json response"
+  "Get the completion suggestions from the JSON response."
   (let ((completions (cdr (assoc 'choices json))))
     (mapcar (lambda (completion)
               (cdr (assoc 'text completion)))
             completions)))
 
 ;;;###autoload
-(defun codex-complete-region (beginning end)
-  "Query OpenAI Codex to generate code taking current region as context"
+(defun codex-completion-region (beginning end)
+  "Query OpenAI Codex to generate code.
+Take current region from BEGINNING to END as context."
   (interactive "r")
   (let* ((region (buffer-substring-no-properties beginning end))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
@@ -103,8 +104,9 @@
      (codex-completion--get-completion-from-api))))
 
 ;;;###autoload
-(defun codex-complete-query (query)
-  "Query OpenAI Codex to generate code taking `query` passed by user as context"
+(defun codex-completion-query (query)
+  "Query OpenAI Codex to generate code.
+Take QUERY passed by user as context."
   (interactive "sQuery: ")
   (let* ((bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
@@ -120,8 +122,9 @@
      (codex-completion--get-completion-from-api))))
 
 ;;;###autoload
-(defun codex-complete ()
-  "Query OpenAI Codex to generate code. Provide current paragraph till point as context"
+(defun codex-completion ()
+  "Query OpenAI Codex to generate code.
+Provide current paragraph till point as context."
   (interactive)
   (let* ((prefix (codex-completion--get-current-paragraph-until-point))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
