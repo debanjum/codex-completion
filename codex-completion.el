@@ -115,24 +115,42 @@
      ;; extract edit from response
      (codex-completion--get-completions-from-response (json-read)))))
 
-;;;###autoload
-(defun codex-completion-complete-region (beginning end)
-  "Make OpenAI Codex generate code completion.
-Take current active region from BEGINNING to END as context."
-  (interactive "r")
-  (let* ((region (buffer-substring-no-properties beginning end))
+
+(defun codex-completion--complete (prompt &optional suffix max-tokens)
+  "Make OpenAI Codex generate code completion from PROMPT.
+Optionally specify SUFFIX, MAX-TOKENS."
+  (let* ((max-tokens (or max-tokens 64))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
           `(("Content-Type" . "application/json")
             ("Authorization" . ,bearer-token)))
          (url-request-data
-          (json-encode `(("prompt" . ,region)
+          (json-encode `(("prompt" . ,prompt)
                          ("model" . ,codex-completion-openai-model)
-                         ("max_tokens" . 64)
+                         ("suffix" . ,suffix)
+                         ("max_tokens" . ,max-tokens)
                          ("temperature" . 0)))))
     (insert
      (codex-completion--get-completion-from-api))))
+
+;;;###autoload
+(defun codex-completion-complete-region (beginning end)
+  "Make OpenAI Codex generate code completion.
+Take current active region from BEGINNING to END as context."
+  (interactive "r")
+  (let ((region (buffer-substring-no-properties beginning end)))
+     (codex-completion--complete region)))
+
+;;;###autoload
+(defun codex-completion-complete ()
+  "Make OpenAI Codex generate code completion.
+Provide current paragraph split by point as context."
+  (interactive)
+  (let ((prefix (codex-completion--get-current-paragraph-until-point))
+         (suffix (codex-completion--get-current-paragraph-after-point))
+         (max-tokens 256))
+    (codex-completion--complete prefix suffix max-tokens)))
 
 ;;;###autoload
 (defun codex-completion-instruct (instruction)
@@ -154,28 +172,7 @@ Take INSTRUCTION passed by user and current active region (if any) as context."
         (save-excursion
           (delete-region (region-beginning) (region-end))
           (insert (codex-completion--get-edit-from-api)))
-      (insert (codex-completion--get-edit-from-api)))))
-
-;;;###autoload
-(defun codex-completion-complete ()
-  "Make OpenAI Codex generate code completion.
-Provide current paragraph split by point as context."
-  (interactive)
-  (let* ((prefix (codex-completion--get-current-paragraph-until-point))
-         (suffix (codex-completion--get-current-paragraph-after-point))
-         (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
-         (url-request-method "POST")
-         (url-request-extra-headers
-          `(("Content-Type" . "application/json")
-            ("Authorization" . ,bearer-token)))
-         (url-request-data
-          (json-encode `(("prompt" . ,prefix)
-                         ("suffix" . ,suffix)
-                         ("model" . ,codex-completion-openai-model)
-                         ("max_tokens" . 256)
-                         ("temperature" . 0)))))
-    (insert
-     (codex-completion--get-completion-from-api))))
+      (codex-completion--complete instruction))))
 
 (provide 'codex-completion)
 
