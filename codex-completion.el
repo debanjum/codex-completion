@@ -1,11 +1,11 @@
-;;; codex-completion.el --- OpenAI Codex powered Code Completion -*- lexical-binding: t -*-
+;;; codex-completion.el --- OpenAI Codex powered Text Completion -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2022 Debanjum Singh Solanky
+;; Copyright (C) 2021-2023 Debanjum Singh Solanky
 
 ;; Author: Debanjum Singh Solanky <debanjum AT gmail DOT com>
-;; Description: Complete and edit code with Codex as your AI assistant
+;; Description: Complete, edit code and text with Codex as your AI assistant
 ;; Keywords: abbrev, matching, auto-complete, programming
-;; Version: 0.2.0
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/debanjum/codex-completion
 
@@ -28,10 +28,11 @@
 
 ;;; Commentary:
 
-;; This package enables code completion and editing using Codex by OpenAI
-;; The models code generation capabilities are utilized via an HTTP API
-;; The model will generate code based on your instructions and provided context
-;; Code around point, active region or direct instructions are passed as context
+;; This package enables text and code completion and editing using Codex by OpenAI
+;;
+;; 1. Text around point, active region and direct instructions provide context
+;; 2. This context is passed to online OpenAI models to generate text or code
+;; 3. The model generated text and code is edited or inserted into the buffer
 
 ;;; Code:
 
@@ -56,6 +57,11 @@
   :group 'codex-completion
   :type 'string)
 
+(defcustom codex-completion-openai-text-model "text-davinci-003"
+  "The OpenAI text completion model."
+  :group 'codex-completion
+  :type 'string)
+
 (defcustom codex-completion-openai-edit-url "https://api.openai.com/v1/edits"
   "The URL to access the OpenAI API edit endpoint."
   :group 'codex-completion
@@ -63,6 +69,11 @@
 
 (defcustom codex-completion-openai-edit-model "code-davinci-edit-001"
   "The OpenAI code edit model."
+  :group 'codex-completion
+  :type 'string)
+
+(defcustom codex-completion-openai-text-edit-model "text-davinci-edit-001"
+  "The OpenAI text edit model."
   :group 'codex-completion
   :type 'string)
 
@@ -117,9 +128,11 @@
 
 
 (defun codex-completion--complete (prompt &optional suffix max-tokens)
-  "Make OpenAI Codex generate code completion from PROMPT.
+  "Make OpenAI Codex generate code or text completion from PROMPT.
 Optionally specify SUFFIX, MAX-TOKENS."
-  (let* ((max-tokens (or max-tokens 64))
+  (let* ((model (if (derived-mode-p 'prog-mode) codex-completion-openai-model codex-completion-openai-text-model))
+         (temperature (if (derived-mode-p 'prog-mode) 0 0.9))
+         (max-tokens (or max-tokens 64))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
@@ -127,16 +140,16 @@ Optionally specify SUFFIX, MAX-TOKENS."
             ("Authorization" . ,bearer-token)))
          (url-request-data
           (json-encode `(("prompt" . ,prompt)
-                         ("model" . ,codex-completion-openai-model)
+                         ("model" . ,model)
                          ("suffix" . ,suffix)
                          ("max_tokens" . ,max-tokens)
-                         ("temperature" . 0)))))
+                         ("temperature" . ,temperature)))))
     (insert
      (codex-completion--get-completion-from-api))))
 
 ;;;###autoload
 (defun codex-completion-complete-region (beginning end)
-  "Make OpenAI Codex generate code completion.
+  "Make OpenAI Codex generate code or text completion.
 Take current active region from BEGINNING to END as context."
   (interactive "r")
   (let ((region (buffer-substring-no-properties beginning end)))
@@ -144,7 +157,7 @@ Take current active region from BEGINNING to END as context."
 
 ;;;###autoload
 (defun codex-completion-complete ()
-  "Make OpenAI Codex generate code completion.
+  "Make OpenAI Codex generate code or text completion.
 Provide current paragraph split by point as context."
   (interactive)
   (let ((prefix (codex-completion--get-current-paragraph-until-point))
@@ -154,10 +167,12 @@ Provide current paragraph split by point as context."
 
 ;;;###autoload
 (defun codex-completion-instruct (instruction)
-  "Instruct OpenAI Codex to generate code completion or edit highlighted code.
+  "Instruct OpenAI Codex to generate or edit (highlighted) code or text.
 Take INSTRUCTION passed by user and current active region (if any) as context."
   (interactive "sInstruction: ")
   (let* ((region (if (region-active-p) (buffer-substring-no-properties (region-beginning) (region-end)) ""))
+         (model (if (derived-mode-p 'prog-mode) codex-completion-openai-edit-model codex-completion-openai-text-edit-model))
+         (temperature (if (derived-mode-p 'prog-mode) 0 0.9))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
          (url-request-extra-headers
@@ -166,8 +181,8 @@ Take INSTRUCTION passed by user and current active region (if any) as context."
          (url-request-data
           (json-encode `(("instruction" . ,instruction)
                          ("input" . ,region)
-                         ("model" . ,codex-completion-openai-edit-model)
-                         ("temperature" . 0)))))
+                         ("model" . ,model)
+                         ("temperature" . ,temperature)))))
     (if (region-active-p)
         (save-excursion
           (delete-region (region-beginning) (region-end))
@@ -176,7 +191,7 @@ Take INSTRUCTION passed by user and current active region (if any) as context."
 
 ;;;###autoload
 (defun codex-completion (&optional instruct)
-  "Make OpenAI Codex generate code completion or edit highlighted code.
+  "Make OpenAI Codex generate or edit (highlighted) code or text.
 If INSTRUCT prefix set, ask user for instruction as context.
 Else if region active, use current region as context.
 Else use current paragraph as context."

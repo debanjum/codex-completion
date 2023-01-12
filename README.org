@@ -1,5 +1,5 @@
 * Codex Completion
-  /Complete, Edit Code in Emacs using [[https://openai.com/blog/openai-codex/][OpenAI Codex]]/
+  /Complete, Edit Code and Text in Emacs using [[https://openai.com/blog/openai-codex/][OpenAI Codex]]/
 
 ** Demo
    [[./codex-completion-demo.gif]]
@@ -35,19 +35,19 @@
      - /Note: Procedure to install using Quelpa etc are similar to straight.el/
 
 ** Usage
-*** Edit Code
+*** Edit Code or Text
      1. Mark/highlight region to Edit
      2. Call ~C-u M-x codex-completion~
      3. Enter your edit instructions for Codex at prompt
 
      This will replace the highlighted region with the edit response from Codex
 
-*** Complete Code at Point
+*** Complete Code or Text at Point
      1. Call ~M-x codex-completion~
 
      This will insert code provided by Codex at point. It will use the current paragraph as context
 
-*** Complete Code using Region
+*** Complete Code or Text using Region
      1. Mark region to use as context to Codex for Completion
      2. Call ~M-x codex-completion~
 
