@@ -161,15 +161,15 @@ Take current active region from BEGINNING to END as context."
 Provide current paragraph split by point as context."
   (interactive)
   (let ((prefix (codex-completion--get-current-paragraph-until-point))
-         (suffix (codex-completion--get-current-paragraph-after-point))
-         (max-tokens 256))
+        (suffix (codex-completion--get-current-paragraph-after-point))
+        (max-tokens 256))
     (codex-completion--complete prefix suffix max-tokens)))
 
 ;;;###autoload
 (defun codex-completion-instruct (instruction)
   "Instruct OpenAI Codex to generate or edit (highlighted) code or text.
 Take INSTRUCTION passed by user and current active region (if any) as context."
-  (interactive "sInstruction: ")
+  (interactive "sInstruct Codex: ")
   (let* ((region (if (region-active-p) (buffer-substring-no-properties (region-beginning) (region-end)) ""))
          (model (if (derived-mode-p 'prog-mode) codex-completion-openai-edit-model codex-completion-openai-text-edit-model))
          (temperature (if (derived-mode-p 'prog-mode) 0 0.9))
@@ -196,7 +196,7 @@ If INSTRUCT prefix set, ask user for instruction as context.
 Else if region active, use current region as context.
 Else use current paragraph as context."
   (interactive "P")
-  (let ((instruction (if instruct (read-string "Instruction: ") "")))
+  (let ((instruction (if instruct (read-string "Instruct Codex: ") "")))
     (cond
      (instruct
       (codex-completion-instruct instruction))
