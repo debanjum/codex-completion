@@ -52,8 +52,13 @@
   :group 'codex-completion
   :type 'string)
 
-(defcustom codex-completion-openai-model "code-davinci-002"
-  "The OpenAI code completion model."
+(defcustom codex-completion-openai-chat-completion-url "https://api.openai.com/v1/chat/completions"
+  "The URL to access the OpenAI API chat completion endpoint."
+  :group 'codex-completion
+  :type 'string)
+
+(defcustom codex-completion-openai-model "gpt-3.5-turbo"
+  "The OpenAI chat model to use for code completion."
   :group 'codex-completion
   :type 'string)
 
@@ -99,21 +104,32 @@
       (forward-paragraph)
       (point)))))
 
-(defun codex-completion--get-completion-from-api ()
-  "Call OpenAI API and return suggested completion from response."
+(defun codex-completion--get-completion-from-api (&optional use-chat-model)
+  "Call OpenAI chat or text API based on USE-CHAT-MODEL.
+Get suggested completion from response."
   (car
    (with-current-buffer
        (url-retrieve-synchronously
-        codex-completion-openai-completion-url)
+        (if use-chat-model codex-completion-openai-chat-completion-url codex-completion-openai-completion-url))
      (goto-char url-http-end-of-headers)
      ;; extract completion from response
-     (codex-completion--get-completions-from-response (json-read)))))
+     (if use-chat-model
+         (codex-completion--get-completions-from-chat-response (json-read))
+       (codex-completion--get-completions-from-response (json-read))))))
 
 (defun codex-completion--get-completions-from-response (json)
   "Get the completion suggestions from the JSON response."
   (let ((completions (cdr (assoc 'choices json))))
     (mapcar (lambda (completion)
               (cdr (assoc 'text completion)))
+            completions)))
+
+(defun codex-completion--get-completions-from-chat-response (json)
+  "Get the completion suggestions from the JSON response by chat model."
+  (let ((completions (cdr (assoc 'choices json))))
+    (mapcar (lambda (completion)
+              (cdr (assoc 'content
+                          (cdr (assoc 'message completion)))))
             completions)))
 
 (defun codex-completion--get-edit-from-api ()
@@ -126,12 +142,12 @@
      ;; extract edit from response
      (codex-completion--get-completions-from-response (json-read)))))
 
-
 (defun codex-completion--complete (prompt &optional suffix max-tokens)
   "Make OpenAI Codex generate code or text completion from PROMPT.
 Optionally specify SUFFIX, MAX-TOKENS."
-  (let* ((model (if (derived-mode-p 'prog-mode) codex-completion-openai-model codex-completion-openai-text-model))
-         (temperature (if (derived-mode-p 'prog-mode) 0 0.9))
+  (let* ((use-chat-model (derived-mode-p 'prog-mode))
+         (model (if use-chat-model codex-completion-openai-model codex-completion-openai-text-model))
+         (temperature (if use-chat-model 0 0.9))
          (max-tokens (or max-tokens 64))
          (bearer-token (format "Bearer %s" codex-completion-openai-api-token))
          (url-request-method "POST")
@@ -139,13 +155,21 @@ Optionally specify SUFFIX, MAX-TOKENS."
           `(("Content-Type" . "application/json")
             ("Authorization" . ,bearer-token)))
          (url-request-data
-          (json-encode `(("prompt" . ,prompt)
-                         ("model" . ,model)
-                         ("suffix" . ,suffix)
-                         ("max_tokens" . ,max-tokens)
-                         ("temperature" . ,temperature)))))
+          (json-encode
+           (if use-chat-model
+               `(("messages" . ,(vector
+                                 `(("role" . "user")
+                                   ("content" . ,prompt))))
+                 ("model" . ,model)
+                 ("max_tokens" . ,max-tokens)
+                 ("temperature" . ,temperature))
+             `(("prompt" . ,prompt)
+               ("model" . ,model)
+               ("suffix" . ,suffix)
+               ("max_tokens" . ,max-tokens)
+               ("temperature" . ,temperature))))))
     (insert
-     (codex-completion--get-completion-from-api))))
+     (codex-completion--get-completion-from-api use-chat-model))))
 
 ;;;###autoload
 (defun codex-completion-complete-region (beginning end)
